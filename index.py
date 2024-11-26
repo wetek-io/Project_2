@@ -31,3 +31,10 @@ optional_indicators = [
     "TetanusLast10Tdap",
     "ChestScan",
 ]
+
+all_indicators = (
+    direct_indicators
+    + indirect_indicators
+    + less_direct_indicators
+    + optional_indicators
+)
