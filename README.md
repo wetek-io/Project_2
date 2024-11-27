@@ -15,17 +15,15 @@ We will utilize healthcare datasets suitable for classification tasks, including
 Build project environment using conda
 
 ```bash
-conda env update --name project_2_env -f environment.yml --prune
+conda env create -f environment.yml
+```
+
+**To remove the env, after installing a new tool and adding it to the yml**
+
+```bash
+conda remove --name project_2_env --all
 ```
 
 ### Tech Stack
 
-- Jupyter Notebook
-- python
-- pandas
-- numpy
-- scikit-learn
-- [matplotlib](https://matplotlib.org/)
-- [seaborn](https://seaborn.pydata.org/)
-- pip
-- DigitalOcean
+[Environment](environment.yml)
