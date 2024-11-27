@@ -1,7 +1,6 @@
 # Data
 
-data/csv/raw_data.csv
-data/csv/clean_data.csv
+*/**/*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
