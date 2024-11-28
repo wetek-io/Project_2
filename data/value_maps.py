@@ -1,5 +1,32 @@
 """ Int maps for Dataframe column values"""
 
+fill_values = {
+    "HighRiskLastYear": 99.99,
+    "AlcoholDrinkers": 99.99,
+    "AgeCategory": 99.99,
+    "RaceEthnicityCategory": 99.99,
+    "ECigaretteUsage": 99.99,
+    "SmokerStatus": 99.99,
+    "HadDiabetes": 99.99,
+    "HadArthritis": 99.99,
+    "HadKidneyDisease": 99.99,
+    "HadDepressiveDisorder": 99.99,
+    "HadAsthma": 99.99,
+    "HadStroke": 99.99,
+    "HadAngina": 99.99,
+    "HadHeartAttack": 99.99,
+    "PhysicalActivities": 99.99,
+    "LastCheckupTime": 99.99,
+    "GeneralHealth": 99.99,
+    "Sex": 99.99,
+    "PhysicalHealthDays": 99.99,
+    "MentalHealthDays": 99.99,
+    "SleepHours": 99.99,
+    "HeightInMeters": 99.99,
+    "BMI": 99.99,
+    "WeightInKilograms": 99.99,
+}
+
 binaryValues = {"Female": 1, "Male": 0, "Yes": 1, "No": 0}
 
 gen_health_weights = {
