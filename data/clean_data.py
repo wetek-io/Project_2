@@ -14,11 +14,15 @@ from data.value_maps import (
 )
 
 
-def clean_data(df, path):
+def clean_data(df, path, fillna: bool = False, dropna: bool = True):
     """
     Simply takes in the dataframe from main.ipynb and cleans it up
     """
+
+    # save the raw csv file
     pd.DataFrame.to_csv(df, f"{path}/raw_data.csv", index=False)
+    
+    # remap values to numerics
     df["GeneralHealth"] = df["GeneralHealth"].map(gen_health_weights)
     df["AgeCategory"] = df["AgeCategory"].map(age_ranges)
     df["RaceEthnicityCategory"] = df["RaceEthnicityCategory"].map(
@@ -37,35 +41,41 @@ def clean_data(df, path):
     df["HadDiabetes"] = df["HadDiabetes"].map(binaryValues)
     df["AlcoholDrinkers"] = df["AlcoholDrinkers"].map(binaryValues)
     df["HighRiskLastYear"] = df["HighRiskLastYear"].map(binaryValues)
-    df = df.fillna(
-        {
-            "HighRiskLastYear": df["HighRiskLastYear"].mode()[0],
-            "AlcoholDrinkers": df["AlcoholDrinkers"].mode()[0],
-            "AgeCategory": df["AgeCategory"].mode()[0],
-            "RaceEthnicityCategory": df["RaceEthnicityCategory"].mode()[0],
-            "ECigaretteUsage": df["ECigaretteUsage"].mode()[0],
-            "SmokerStatus": df["SmokerStatus"].mode()[0],
-            "HadDiabetes": df["HadDiabetes"].mode()[0],
-            "HadArthritis": df["HadArthritis"].mode()[0],
-            "HadKidneyDisease": df["HadKidneyDisease"].mode()[0],
-            "HadDepressiveDisorder": df["HadDepressiveDisorder"].mode()[0],
-            "HadAsthma": df["HadAsthma"].mode()[0],
-            "HadStroke": df["HadStroke"].mode()[0],
-            "HadAngina": df["HadAngina"].mode()[0],
-            "HadHeartAttack": df["HadHeartAttack"].mode()[0],
-            "PhysicalActivities": df["PhysicalActivities"].mode()[0],
-            "LastCheckupTime": df["LastCheckupTime"].mode()[0],
-            "GeneralHealth": df["GeneralHealth"].mode()[0],
-            "Sex": df["Sex"].mode()[0],
-            "PhysicalHealthDays": df["PhysicalHealthDays"].median(),
-            "MentalHealthDays": df["MentalHealthDays"].median(),
-            "SleepHours": df["SleepHours"].median(),
-            "HeightInMeters": df["HeightInMeters"].median(),
-            "BMI": df["BMI"].median(),
-            "WeightInKilograms": df["WeightInKilograms"].median(),
-        }
-    )
+    
+    # if you need to keep the na values
+    if fillna:
+        df = df.fillna(
+            {
+                "HighRiskLastYear": 9999,
+                "AlcoholDrinkers": 9999,
+                "AgeCategory": 9999,
+                "RaceEthnicityCategory": 9999,
+                "ECigaretteUsage": 9999,
+                "SmokerStatus": 9999,
+                "HadDiabetes": 9999,
+                "HadArthritis": 9999,
+                "HadKidneyDisease": 9999,
+                "HadDepressiveDisorder": 9999,
+                "HadAsthma": 9999,
+                "HadStroke": 9999,
+                "HadAngina": 9999,
+                "HadHeartAttack": 9999,
+                "PhysicalActivities": 9999,
+                "LastCheckupTime": 9999,
+                "GeneralHealth": 9999,
+                "Sex": 9999,
+                "PhysicalHealthDays": 9999,
+                "MentalHealthDays": 9999,
+                "SleepHours": 9999,
+                "HeightInMeters": 9999,
+                "BMI": 9999,
+                "WeightInKilograms": 9999,
+            }
+        )
 
+    if dropna:
+        df = df.dropna(how='any')
+        
     df = df.drop(columns=df.select_dtypes(include=["object"]).columns).reindex()
     pd.DataFrame.to_csv(df, f"{path}/clean_data.csv", index=False)
     return df
