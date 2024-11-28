@@ -15,7 +15,7 @@ from data.value_maps import (
 )
 
 
-def clean_data(df, path, fillna: bool = True):
+def clean_data(df, path, fillna: bool = True, dropna: bool = False):
     """
     Simply takes in the dataframe from main.ipynb and cleans it up
     """
@@ -40,10 +40,12 @@ def clean_data(df, path, fillna: bool = True):
     df["AlcoholDrinkers"] = df["AlcoholDrinkers"].map(binaryValues)
     df["HighRiskLastYear"] = df["HighRiskLastYear"].map(binaryValues)
 
-    df = df.drop(columns=df.select_dtypes(include=["object"]).columns).reindex()
-
     if fillna:
         df = df.fillna(value=fill_values)
+    if dropna:
+        df = df.dropna(how="any")
+
+    df = df.drop(columns=df.select_dtypes(include=["object"]).columns).reindex()
 
     pd.DataFrame.to_csv(df, f"{path}/clean_data.csv", index=False)
 
