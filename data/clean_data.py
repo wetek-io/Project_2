@@ -11,7 +11,6 @@ def clean_data(df, path):
     """
         Simply takes in the dataframe from main.ipynb and cleans it up
     """
-    
     pd.DataFrame.to_csv(df, f"{path}/raw_data.csv", index=False)
     df = df.fillna(
         {
