@@ -1,5 +1,6 @@
 name: project_2_env
 channels:
+  - apple
   - conda-forge
   - defaults
 dependencies:
@@ -15,3 +16,4 @@ dependencies:
   - joblib
   - pathlib
   - plotly
+  - scipy
