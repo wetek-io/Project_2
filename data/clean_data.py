@@ -1,18 +1,18 @@
+"""Quick and easy cleaning method for the dataset"""
+
 import pandas as pd
-from data.value_maps import (
-    e_smoking_history,
-    last_checkup,
-    smoking_history,
-    race_ethnicity_category,
-    age_ranges,
-    gen_health_weights,
-    states,
-    binaryValues,
-)
+
+from data.value_maps import (age_ranges, binaryValues, e_smoking_history,
+                             gen_health_weights, last_checkup,
+                             race_ethnicity_category, smoking_history, states)
 
 
 def clean_data(df, path):
-    pd.DataFrame.to_csv(df, f"{path}/raw_data.csv")
+    """
+        Simply takes in the dataframe from main.ipynb and cleans it up
+    """
+    
+    pd.DataFrame.to_csv(df, f"{path}/raw_data.csv", index=False)
     df = df.fillna(
         {
             "HighRiskLastYear": df["HighRiskLastYear"].mode()[0],
@@ -37,28 +37,27 @@ def clean_data(df, path):
             "HeightInMeters": df["HeightInMeters"].median(),
             "BMI": df["BMI"].median(),
             "WeightInKilograms": df["WeightInKilograms"].median(),
-            "State": "Unknown",
         }
     )
-    df["GeneralHealthIDs"] = df["GeneralHealth"].map(gen_health_weights)
-    df["AgeCategoryIDs"] = df["AgeCategory"].map(age_ranges)
-    df["RaceEthnicityCategoryIDs"] = df["RaceEthnicityCategory"].map(
+    df["GeneralHealth"] = df["GeneralHealth"].map(gen_health_weights)
+    df["AgeCategory"] = df["AgeCategory"].map(age_ranges)
+    df["RaceEthnicityCategory"] = df["RaceEthnicityCategory"].map(
         race_ethnicity_category
     )
-    df["SmokerStatusIDs"] = df["SmokerStatus"].map(smoking_history)
-    df["ECigaretteUsageIDs"] = df["ECigaretteUsage"].map(e_smoking_history)
-    df["LastCheckupTimeIDs"] = df["LastCheckupTime"].map(last_checkup)
-    df["StateIDs"] = df["State"].map(states)
-    df["SexBI"] = df["Sex"].map(binaryValues)
-    df["PhysicalActivitiesBI"] = df["PhysicalActivities"].map(binaryValues)
-    df["HadHeartAttackBI"] = df["HadHeartAttack"].map(binaryValues)
-    df["HadAnginaBI"] = df["HadAngina"].map(binaryValues)
-    df["HadStrokeBI"] = df["HadStroke"].map(binaryValues)
-    df["HadArthritisBI"] = df["HadArthritis"].map(binaryValues)
-    df["HadDiabetesBI"] = df["HadDiabetes"].map(binaryValues)
-    df["AlcoholDrinkersBI"] = df["AlcoholDrinkers"].map(binaryValues)
-    df["HighRiskLastYearBI"] = df["HighRiskLastYear"].map(binaryValues)
+    df["SmokerStatus"] = df["SmokerStatus"].map(smoking_history)
+    df["ECigaretteUsage"] = df["ECigaretteUsage"].map(e_smoking_history)
+    df["LastCheckupTime"] = df["LastCheckupTime"].map(last_checkup)
+    df["State"] = df["State"].map(states)
+    df["Sex"] = df["Sex"].map(binaryValues)
+    df["PhysicalActivities"] = df["PhysicalActivities"].map(binaryValues)
+    df["HadHeartAttack"] = df["HadHeartAttack"].map(binaryValues)
+    df["HadAngina"] = df["HadAngina"].map(binaryValues)
+    df["HadStroke"] = df["HadStroke"].map(binaryValues)
+    df["HadArthritis"] = df["HadArthritis"].map(binaryValues)
+    df["HadDiabetes"] = df["HadDiabetes"].map(binaryValues)
+    df["AlcoholDrinkers"] = df["AlcoholDrinkers"].map(binaryValues)
+    df["HighRiskLastYear"] = df["HighRiskLastYear"].map(binaryValues)
 
-    df = df.drop(columns=df.select_dtypes(include=["object"]).columns)
-    pd.DataFrame.to_csv(df, f"{path}/clean_data.csv")
+    df = df.drop(columns=df.select_dtypes(include=["object"]).columns).reindex()
+    pd.DataFrame.to_csv(df, f"{path}/clean_data.csv", index=False)
     return df
