@@ -1,6 +1,8 @@
 """Quick and easy cleaning method for the dataset"""
 
+from pathlib import Path
 import pandas as pd
+import logging
 
 from data.value_maps import (
     age_ranges,
@@ -14,11 +16,33 @@ from data.value_maps import (
     fill_values,
 )
 
+CSV_URL = "https://web-app-media-assests.sfo3.cdn.digitaloceanspaces.com/Indicators_of_Heart_Disease/2022/heart_2022_with_nans.csv"
+RAW_DATA_PATH = "./data/csv/raw_data.csv"
+CLEAN_DATA_PATH = "./data/csv/clean_data.csv"
+
 
 def clean_data(df, path, fillna: bool = True, dropna: bool = False):
     """
-    Simply takes in the dataframe from main.ipynb and cleans it up
+    Cleans the input DataFrame by applying mappings, filling/dropping NaN values,
+    and saving raw and cleaned versions of the data.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame to clean.
+        path (str): Directory path to save raw and cleaned data.
+        fillna (bool): Whether to fill missing values.
+        dropna (bool): Whether to drop rows with missing values.
+        target_columns (list[str], optional): List of columns to retain.
+
+    Returns:
+        pd.DataFrame: The cleaned DataFrame.
     """
+
+    # Initialize logger
+    logging.basicConfig(level=logging.INFO)
+
+    # Save raw data
+    logging.info("Saving raw data...")
+
     pd.DataFrame.to_csv(df, f"{path}/raw_data.csv", index=False)
 
     df["GeneralHealth"] = df["GeneralHealth"].map(gen_health_weights)
@@ -48,5 +72,23 @@ def clean_data(df, path, fillna: bool = True, dropna: bool = False):
     df = df.drop(columns=df.select_dtypes(include=["object"]).columns).reindex()
 
     pd.DataFrame.to_csv(df, f"{path}/clean_data.csv", index=False)
+
+    return df
+
+
+def fetch_check(
+    to_fetch: bool = False, to_fillna: bool = False, to_dropna: bool = False
+):
+    """
+    Check for fetch and data cleaning toggles
+    """
+
+    # check for existing file and not_fetch bool stats
+    if not Path(CLEAN_DATA_PATH).exists() or to_fetch:
+        df = pd.read_csv(CSV_URL)
+        df.to_csv(RAW_DATA_PATH)
+        df = clean_data(df, "data/csv/", fillna=to_fillna, dropna=to_dropna)
+    else:
+        df = pd.read_csv(CLEAN_DATA_PATH)
 
     return df
