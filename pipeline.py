@@ -26,7 +26,7 @@ class CustomEncoders(BaseEstimator, TransformerMixin): #GPT inital generated
         X_transformed = X.copy()
         for col, encoder in self.encoders.items():
             X_transformed[col] = encoder.transform(X_transformed[[col]])
-        return X_transformed
+        return X_transformed.values
     
     def create_encoders(self, X):
         encoders = {}
@@ -36,7 +36,7 @@ class CustomEncoders(BaseEstimator, TransformerMixin): #GPT inital generated
             elif col in self.yes_no_cols:
                 encoders[col] = OrdinalEncoder(categories=["No", "Yes"], handle_unknown='use_encoded_value', unknown_value=-1)
             elif col in self.label_cols:
-                encoders[col] = LabelEncoder()
+                encoders[col] = OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1)
         return encoders
 
     def fit_encoders(self, X):
@@ -62,7 +62,7 @@ class CustomScalers(BaseEstimator, TransformerMixin): #GPT inital generated
         X_transformed = X.copy()
         for col, scaler in self.scalers.items():
             X_transformed[col] = scaler.transform(X_transformed[[col]])
-        return X_transformed
+        return X_transformed.values
 
     def create_fit_scalers(self, X):
         """Create and fit data to for the scaling columns."""
@@ -127,13 +127,17 @@ def model_generator(df):
         'inv_std_cols' : inv_std_cols,
         }
 
+
     categorical_transformer = CustomEncoders(columns=categorical_columns)
     numerical_transformer = CustomScalers(columns=numerical_columns)
 
+    categorical_features = list(custom_categories.keys()) + yes_no_cols + label_cols
+    numerical_features = min_max_cols + std_cols + inv_std_cols
+
     preprocessor = ColumnTransformer(
         transformers=[
-            ('cat', categorical_transformer, categorical_columns)
-            ('num', numerical_transformer, numerical_columns)
+            ('cat', categorical_transformer, categorical_features),
+            ('num', numerical_transformer, numerical_features),
         ]
     )
 
@@ -142,12 +146,15 @@ def model_generator(df):
         ('model', RandomForestClassifier(random_state=1))
     ])
 
-    X_train, X_test, y_train, t_test = train_test_split(random_state=1)
+    X_train, X_test, y_train, t_test = train_test_split(X, y, random_state=1)
     pipeline.fit(X_train, y_train)
     y_pred = pipeline.predict(X_test)
     print(y_pred)
 
 if __name__ == "__main__":
     heart_2022_df = pd.read_csv("heart_2022_no_nans.csv")
-
+    heart_2022_df["HeartFailureLikelihood"] = ((heart_2022_df['HadHeartAttack'] == "Yes") | (heart_2022_df["HadAngina"] == 'Yes')).astype(int)
+    X = heart_2022_df.copy().drop(columns=["HeartFailureLikelihood", "HadHeartAttack", "HadAngina"])
+    y = heart_2022_df["HeartFailureLikelihood"]#.values.reshape(-1,1)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
     model_generator(heart_2022_df)
