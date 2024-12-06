@@ -2,3 +2,4 @@ gradio
 numpy
 joblib
 scikit-learn
+pandas

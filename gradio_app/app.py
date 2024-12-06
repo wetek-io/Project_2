@@ -1,58 +1,68 @@
-
 import gradio as gr
-import joblib
 import pandas as pd
+import joblib
 
 # Load the trained model
-model = joblib.load("optimized_heart_failure_model.pkl")
+model_path = "trained_model.pkl"
+rf_model = joblib.load(model_path)
 
-# Define the prediction function
-def predict_heart_failure(**inputs):
-    # Encode inputs as DataFrame (match the reduced feature set)
-    input_data = pd.DataFrame(inputs, index=[0])
-    # Make prediction
-    prediction = model.predict(input_data)[0]
-    return "High likelihood of heart failure" if prediction == 1 else "Low likelihood of heart failure"
-
-# Get input features from the reduced model
-feature_columns = [
-    "PhysicalHealthDays", "MentalHealthDays", "SleepHours", "BMI",
-    "Sex_Male", "GeneralHealth_Good", "GeneralHealth_Very good",
-    "GeneralHealth_Excellent"
+# Define feature ranges and labels based on data
+numerical_features = ['BMI', 'WeightInKilograms', 'HeightInMeters', 'PhysicalHealthDays', 'SleepHours']
+categorical_features = [
+    'HadAngina_Yes', 'HadHeartAttack_Yes', 'ChestScan_Yes', 
+    'HadStroke_Yes', 'DifficultyWalking_Yes', 'HadDiabetes_Yes', 
+    'PneumoVaxEver_Yes', 'HadArthritis_Yes'
 ]
 
-# Generate Gradio inputs dynamically based on features
-gradio_inputs = []
-for feature in feature_columns:
-    if feature.startswith("Sex_"):
-        gradio_inputs.append(gr.Radio(["Male", "Female"], label="Sex"))
-    elif feature.startswith("GeneralHealth_"):
-        gradio_inputs.append(gr.Radio(["Poor", "Fair", "Good", "Very good", "Excellent"], label="General Health"))
-    elif feature == "PhysicalHealthDays":
-        gradio_inputs.append(gr.Slider(0, 30, step=1, label="Physical Health Days"))
-    elif feature == "MentalHealthDays":
-        gradio_inputs.append(gr.Slider(0, 30, step=1, label="Mental Health Days"))
-    elif feature == "SleepHours":
-        gradio_inputs.append(gr.Slider(0, 12, step=0.5, label="Sleep Hours"))
-    elif feature == "BMI":
-        gradio_inputs.append(gr.Slider(10, 50, step=0.1, label="BMI"))
+# Define sliders for numerical features
+sliders = {
+    "BMI": (0, 50, 1),
+    "WeightInKilograms": (30, 200, 1),
+    "HeightInMeters": (1.0, 2.5, 0.01),
+    "PhysicalHealthDays": (0, 30, 1),
+    "SleepHours": (0, 24, 1)
+}
 
-# Map Gradio inputs to a dictionary for the predict function
-def input_to_dict(*args):
-    feature_dict = {feature: val for feature, val in zip(feature_columns, args)}
-    # Encode categorical inputs into binary format (e.g., Male -> 1, Female -> 0)
-    feature_dict["Sex_Male"] = 1 if feature_dict.get("Sex_Male", "Male") == "Male" else 0
-    general_health = feature_dict.get("GeneralHealth_Good", "Poor")
-    for category in ["Good", "Very good", "Excellent"]:
-        feature_dict[f"GeneralHealth_{category}"] = 1 if general_health == category else 0
-    return feature_dict
+# Define radio buttons for categorical features
+radio_options = ['Yes', 'No']
 
-# Set up Gradio interface
+# Prediction function
+def predict_outcome(*inputs):
+    input_data = dict(zip(numerical_features + categorical_features, inputs))
+    
+    # Convert categorical inputs to numerical
+    for feature in categorical_features:
+        input_data[feature] = 1 if input_data[feature] == "Yes" else 0
+    
+    # Create input DataFrame
+    input_df = pd.DataFrame([input_data])
+    
+    # Predict using the model
+    prediction = rf_model.predict(input_df)[0]
+    prediction_label = "High Risk" if prediction == 1 else "Low Risk"
+    
+    # Display input values for debugging
+    return prediction_label, input_data
+
+# Build Gradio interface
+inputs = [
+    gr.Slider(sliders[feature][0], sliders[feature][1], sliders[feature][2], label=feature) 
+    for feature in numerical_features
+] + [
+    gr.Radio(radio_options, label=feature) for feature in categorical_features
+]
+
+outputs = [
+    gr.Textbox(label="Prediction"),
+    gr.JSON(label="Input Values (Debugging)")
+]
+
 interface = gr.Interface(
-    fn=lambda *args: predict_heart_failure(**input_to_dict(*args)),
-    inputs=gradio_inputs,
-    outputs="text",
-    title="Heart Failure Risk Prediction (Optimized)"
+    fn=predict_outcome,
+    inputs=inputs,
+    outputs=outputs,
+    title="Health Risk Prediction with Debugging",
+    description="Predicts health risks based on input parameters using the trained model. Includes input values for debugging."
 )
 
 # Launch the app
