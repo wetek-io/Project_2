@@ -80,17 +80,6 @@ def model_generator(df):
     min_max_cols = ["WeightInKilograms"]
     std_cols     = ["HeightInMeters", "SleepHours", "BMI", "PhysicalHealthDays", "MentalHealthDays"] # There ones are meant to be inverted
 
-    categorical_columns = {
-        'custom_categories' : custom_categories,
-        'yes_no_cols' : yes_no_cols,
-        'label_cols' : label_cols,
-        }
-    
-    numerical_columns = {
-        'min_max_cols' : min_max_cols,
-        'std_cols' : std_cols,
-        }
-
     columns = {
         'custom_categories' : custom_categories,
         "yes_no_cols" : yes_no_cols,
@@ -99,8 +88,16 @@ def model_generator(df):
         'std_cols' : std_cols,
     }
     build_custom_cols(df)
-    X = df.copy().drop(columns=["HeartFailureLikelihood", "HadHeartAttack", "HadAngina"])
-    y = df["HeartFailureLikelihood"]#.values.reshape(-1,1)
+    models = []
+
+    print(" ----------------- NA REMOVED ----------------- ")
+############################################################################################################################################################
+
+    print("Run all columns\n")
+
+    df_na_removed = df.dropna()
+    X = df_na_removed.copy().drop(columns=["HeartFailureLikelihood", "HadHeartAttack", "HadAngina"])
+    y = df_na_removed["HeartFailureLikelihood"]#.values.reshape(-1,1)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
 
     encoders = create_fit_encoders(X_train, columns)
@@ -109,17 +106,87 @@ def model_generator(df):
     X_train_transformed = transform(X_train, encoders=encoders, scalers=scalers)
     X_test_transformed = transform(X_test, encoders=encoders, scalers=scalers)
 
-    model = RandomForestClassifier(random_state=1, max_depth=7, n_estimators=256)
+    model = RandomForestClassifier(random_state=1, max_depth=7, n_estimators=256, class_weight="balanced")
     model.fit(X_train_transformed, y_train)
-
-    print("Accuracy:")
-    print(f"Score for train: {model.score(X_train_transformed, y_train)}")
-    print(f"Score for test: {model.score(X_test_transformed, y_test)}")
+    models.append(model)
 
     y_train_pred = model.predict(X_train_transformed)
     y_test_pred = model.predict(X_test_transformed)
 
+    print("Accuracy:")
+    print(f"Score for train: {model.score(X_train_transformed, y_train):.4f}")
+    print(f"Score for test: {model.score(X_test_transformed, y_test):.4f}")
+
     print("Recall:")
-    print(f"Train recall: {recall_score(y_train, y_train_pred)}")
-    print(f"Test recall: {recall_score(y_test, y_test_pred)}")
-    return model
+    print(f"Train recall: {recall_score(y_train, y_train_pred):.4f}")
+    print(f"Test recall: {recall_score(y_test, y_test_pred):.4f}")
+
+############################################################################################################################################################
+
+    print("---------------------------------")
+    print("With only the ones from Keepers:\n")
+    keepers = ["Sex", "GeneralHealth", "PhysicalHealthDays", "SleepHours",
+               "SmokerStatus", "ECigaretteUsage", "RaceEthnicityCategory", 
+               "AgeCategory", "WeightInKilograms", "BMI", "AlcoholDrinkers",
+               "HighRiskLastYear", "HeartFailureLikelihood"]
+
+    X = df_na_removed.copy()[keepers]
+    y = df_na_removed["HeartFailureLikelihood"]#.values.reshape(-1,1)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
+
+    encoders = create_fit_encoders(X_train, columns)
+    scalers  = create_fit_scalers(X_train, columns)
+
+    X_train_transformed = transform(X_train, encoders=encoders, scalers=scalers)
+    X_test_transformed = transform(X_test, encoders=encoders, scalers=scalers)
+
+    model = RandomForestClassifier(random_state=1, max_depth=7, n_estimators=256, class_weight="balanced")
+    model.fit(X_train_transformed, y_train)
+    models.append(model)
+
+    y_train_pred = model.predict(X_train_transformed)
+    y_test_pred = model.predict(X_test_transformed)
+
+    print("Accuracy:")
+    print(f"Score for train: {model.score(X_train_transformed, y_train):.4f}")
+    print(f"Score for test: {model.score(X_test_transformed, y_test):.4f}")
+
+    print("Recall:")
+    print(f"Train recall: {recall_score(y_train, y_train_pred):.4f}")
+    print(f"Test recall: {recall_score(y_test, y_test_pred):.4f}")
+
+############################################################################################################################################################
+
+
+    print("---------------------------------")
+    print("With only the ones from the yes/no columns:\n")
+    keepers = yes_no_cols + ["HeartFailureLikelihood"]
+
+    X = df_na_removed.copy()[keepers]
+    y = df_na_removed["HeartFailureLikelihood"]#.values.reshape(-1,1)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
+
+    encoders = create_fit_encoders(X_train, columns)
+    scalers  = create_fit_scalers(X_train, columns)
+
+    X_train_transformed = transform(X_train, encoders=encoders, scalers=scalers)
+    X_test_transformed = transform(X_test, encoders=encoders, scalers=scalers)
+
+    model = RandomForestClassifier(random_state=1, max_depth=7, n_estimators=256, class_weight="balanced")
+    model.fit(X_train_transformed, y_train)
+    models.append(model)
+
+    y_train_pred = model.predict(X_train_transformed)
+    y_test_pred = model.predict(X_test_transformed)
+
+    print("Accuracy:")
+    print(f"Score for train: {model.score(X_train_transformed, y_train):.4f}")
+    print(f"Score for test: {model.score(X_test_transformed, y_test):.4f}")
+
+    print("Recall:")
+    print(f"Train recall: {recall_score(y_train, y_train_pred):.4f}")
+    print(f"Test recall: {recall_score(y_test, y_test_pred):.4f}")
+
+############################################################################################################################################################
+
+    return models
