@@ -1,79 +1,46 @@
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score
-import pandas as pd
-from sklearn.preprocessing import LabelEncoder, StandardScaler, OneHotEncoder, OrdinalEncoder, MinMaxScaler
-from sklearn.pipeline import Pipeline
-from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler, OrdinalEncoder, MinMaxScaler
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.compose import ColumnTransformer
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import recall_score
 
-class CustomEncoders(BaseEstimator, TransformerMixin): #GPT inital generated
-    def __init__(self, columns):  # Optionally accept predefined encoders
-        self.encoders = {}
-        self.custom_categories  = columns['custom_categories']
-        self.yes_no_cols        = columns['yes_no_cols']
-        self.label_cols         = columns['label_cols']
+def create_fit_encoders(X, columns):
+    encoders = {}
+    for col in X.columns:
+        if col in columns['custom_categories']:
+            encoders[col] = OrdinalEncoder(categories=[columns['custom_categories'][col]], handle_unknown='use_encoded_value', unknown_value=-1).fit(X=X[[col]])
+        elif col in columns['yes_no_cols']:
+            encoders[col] = OrdinalEncoder(categories=[["No", "Yes"]], handle_unknown='use_encoded_value', unknown_value=-1).fit(X=X[[col]])
+        elif col in columns['label_cols']:
+            encoders[col] = OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1).fit(X=X[[col]])
+    return encoders
 
-    def fit(self, X, y=None):
-        """Fit encoders based on the data."""
-        self.encoders = self.create_encoders(X)
-        self.fit_encoders(X)
-        return self
-    
-    def transform(self, X):
-        "Transform the data"
-        X_transformed = X.copy()
-        for col, encoder in self.encoders.items():
-            X_transformed[col] = encoder.transform(X_transformed[[col]])
-        return X_transformed.values
-    
-    def create_encoders(self, X):
-        encoders = {}
-        for col in X.columns:
-            if col in self.custom_categories:
-                encoders[col] = OrdinalEncoder(categories=[self.custom_categories[col]], handle_unknown='use_encoded_value', unknown_value=-1)
-            elif col in self.yes_no_cols:
-                encoders[col] = OrdinalEncoder(categories=["No", "Yes"], handle_unknown='use_encoded_value', unknown_value=-1)
-            elif col in self.label_cols:
-                encoders[col] = OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1)
-        return encoders
+# def fit_encoders(X, encoders):
+#     """Fit each encoder on its respective column."""
+#     for col, encoder in encoders.items():
+#         encoder.fit(X[[col]])  # Fit on the single column
 
-    def fit_encoders(self, X):
-        """Fit each encoder on its respective column."""
-        for col, encoder in self.encoders.items():
-            encoder.fit(X[[col]])  # Fit on the single column
+def create_fit_scalers(X, columns):
+    """Create and fit data to for the scaling columns."""
+    scalers = {}
+    for col in X.columns:
+        if col in columns['min_max_cols']:
+            scalers[col] = MinMaxScaler().fit(X[[col]])
+        if col in columns['std_cols']:
+            scalers[col] = StandardScaler().fit(X[[col]])
+    return scalers
 
+def transform(X, encoders, scalers):
+    "Transform the data"
+    X_transformed = X.copy()
+    for col, encoder in encoders.items():
+        X_transformed[col] = encoder.transform(X_transformed[[col]])
+    for col, scaler in scalers.items():
+        X_transformed[col] = scaler.transform(X_transformed[[col]])
+    return X_transformed
 
-class CustomScalers(BaseEstimator, TransformerMixin): #GPT inital generated
-    def __init__(self, columns):  # Optionally accept predefined encoders
-        self.scalers = {}
-        self.min_max_cols       = columns['min_max_cols']
-        self.std_cols           = columns['std_cols']   
-        self.inv_std_cols       = columns['inv_std_cols']
-
-    def fit(self, X, y=None):
-        """Fit encoders based on the data."""
-        self.scalers = self.create_fit_scalers(X)
-        return self
-    
-    def transform(self, X):
-        "Transform the data"
-        X_transformed = X.copy()
-        for col, scaler in self.scalers.items():
-            X_transformed[col] = scaler.transform(X_transformed[[col]])
-        return X_transformed.values
-
-    def create_fit_scalers(self, X):
-        """Create and fit data to for the scaling columns."""
-        scalers = {}
-        for col in X.columns:
-            if col in self.min_max_cols:
-                scalers[col] = MinMaxScaler().fit(X[[col]].values.reshape(-1,1))
-            if col in self.std_cols:
-                scalers[col] = StandardScaler().fit(X[[col]].values.reshape(-1,1))
-            if col in self.inv_std_cols:
-                scalers[f"{col}_inverted"] = StandardScaler().fit(np.log1p((X[[col]].max() - X[[col]])).values.reshape(-1,1))
+def build_custom_cols(df):
+    df["HeartFailureLikelihood"] = ((df['HadHeartAttack'] == "Yes") | (df["HadAngina"] == 'Yes')).astype(int)
 
 
 def model_generator(df):
@@ -102,18 +69,16 @@ def model_generator(df):
                                'Yes, received tetanus shot, but not Tdap', 'Yes, received Tdap'],        
     }
 
-    yes_no_cols = ['PhysicalActivities', 'HadStroke',
+    yes_no_cols  = ['PhysicalActivities', 'HadStroke',
                'HadAsthma', 'HadSkinCancer', 'HadCOPD', 'HadDepressiveDisorder',
                'HadKidneyDisease', 'HadArthritis', 'DeafOrHardOfHearing',
                'BlindOrVisionDifficulty', 'DifficultyConcentrating',
                'DifficultyWalking', 'DifficultyDressingBathing',
                'DifficultyErrands', 'ChestScan', 'AlcoholDrinkers',
                'HIVTesting','FluVaxLast12', 'PneumoVaxEver','HighRiskLastYear']
-    
     label_cols   = ["RaceEthnicityCategory", "State"]
     min_max_cols = ["WeightInKilograms"]
-    std_cols     = ["HeightInMeters", "SleepHours", "BMI"]
-    inv_std_cols = ["PhysicalHealthDays", "MentalHealthDays"] # There ones are meant to be inverted
+    std_cols     = ["HeightInMeters", "SleepHours", "BMI", "PhysicalHealthDays", "MentalHealthDays"] # There ones are meant to be inverted
 
     categorical_columns = {
         'custom_categories' : custom_categories,
@@ -124,37 +89,37 @@ def model_generator(df):
     numerical_columns = {
         'min_max_cols' : min_max_cols,
         'std_cols' : std_cols,
-        'inv_std_cols' : inv_std_cols,
         }
 
-
-    categorical_transformer = CustomEncoders(columns=categorical_columns)
-    numerical_transformer = CustomScalers(columns=numerical_columns)
-
-    categorical_features = list(custom_categories.keys()) + yes_no_cols + label_cols
-    numerical_features = min_max_cols + std_cols + inv_std_cols
-
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ('cat', categorical_transformer, categorical_features),
-            ('num', numerical_transformer, numerical_features),
-        ]
-    )
-
-    pipeline = Pipeline(steps=[
-        ("preprocesspr", preprocessor),
-        ('model', RandomForestClassifier(random_state=1))
-    ])
-
-    X_train, X_test, y_train, t_test = train_test_split(X, y, random_state=1)
-    pipeline.fit(X_train, y_train)
-    y_pred = pipeline.predict(X_test)
-    print(y_pred)
-
-if __name__ == "__main__":
-    heart_2022_df = pd.read_csv("heart_2022_no_nans.csv")
-    heart_2022_df["HeartFailureLikelihood"] = ((heart_2022_df['HadHeartAttack'] == "Yes") | (heart_2022_df["HadAngina"] == 'Yes')).astype(int)
-    X = heart_2022_df.copy().drop(columns=["HeartFailureLikelihood", "HadHeartAttack", "HadAngina"])
-    y = heart_2022_df["HeartFailureLikelihood"]#.values.reshape(-1,1)
+    columns = {
+        'custom_categories' : custom_categories,
+        "yes_no_cols" : yes_no_cols,
+        'label_cols' : label_cols,
+        'min_max_cols' : min_max_cols,
+        'std_cols' : std_cols,
+    }
+    build_custom_cols(df)
+    X = df.copy().drop(columns=["HeartFailureLikelihood", "HadHeartAttack", "HadAngina"])
+    y = df["HeartFailureLikelihood"]#.values.reshape(-1,1)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
-    model_generator(heart_2022_df)
+
+    encoders = create_fit_encoders(X_train, columns)
+    scalers  = create_fit_scalers(X_train, columns)
+
+    X_train_transformed = transform(X_train, encoders=encoders, scalers=scalers)
+    X_test_transformed = transform(X_test, encoders=encoders, scalers=scalers)
+
+    model = RandomForestClassifier(random_state=1, max_depth=7, n_estimators=256)
+    model.fit(X_train_transformed, y_train)
+
+    print("Accuracy:")
+    print(f"Score for train: {model.score(X_train_transformed, y_train)}")
+    print(f"Score for test: {model.score(X_test_transformed, y_test)}")
+
+    y_train_pred = model.predict(X_train_transformed)
+    y_test_pred = model.predict(X_test_transformed)
+
+    print("Recall:")
+    print(f"Train recall: {recall_score(y_train, y_train_pred)}")
+    print(f"Test recall: {recall_score(y_test, y_test_pred)}")
+    return model
