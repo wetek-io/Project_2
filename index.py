@@ -2,6 +2,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pickle 
+import joblib 
+import json 
 import scipy.stats as stats
 from sklearn.metrics import classification_report, recall_score, precision_recall_curve, average_precision_score
 from sklearn.preprocessing import StandardScaler, LabelEncoder
@@ -115,6 +118,24 @@ def train_and_evaluate_models(x_train, x_test, y_train, y_test, x_orig_test, y_o
     
     return trained_models
 
+def export_models_and_metadata(trained_models, scaler, feature_columns):
+
+    for name, model in trained_models.items():
+        # Create a safe filename by replacing spaces with underscores
+        model_filename = f'{name.replace(" ", "_")}_model.pkl'
+        joblib.dump(model, model_filename)
+        print(f'Model saved as {model_filename}')
+    
+    # Save the scaler
+    joblib.dump(scaler, 'feature_scaler.pkl')
+    print('Feature scaler saved as feature_scaler.pkl')
+    
+    # Save feature column names
+    feature_names_filename = 'feature_columns.json'
+    with open(feature_names_filename, 'w') as f:
+        json.dump(list(feature_columns), f)
+    print(f'Feature column names saved as {feature_names_filename}')
+
 def main():
     
     filepath = 'data/csv/clean_data.csv'
@@ -128,6 +149,7 @@ def main():
         y_train_encoded, y_test_encoded,
         x_orig_test, y_orig_test
     )
+
 
 if __name__ == "__main__":
     main()
