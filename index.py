@@ -19,15 +19,17 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from data.clean_data import fetch_check
 
 
-def load_and_preprocess_data(filepath):
+def load_and_preprocess_data():
     """
-    Investigating
+    Creates dataframe using fetch_check(), then creates a new HeartDisease column which will
+    be used as the target column, then prepares the x, y datasets
     """
 
     df = fetch_check()
     df["HeartDisease"] = ((df["HadHeartAttack"] == 1) | (df["HadAngina"] == 1)).astype(
         int
     )
+
     print("\nHeartDisease column distribution:")
     print(df["HeartDisease"].value_counts(normalize=True))
 
@@ -43,7 +45,7 @@ def load_and_preprocess_data(filepath):
     return x, y
 
 
-def split_and_scale_data(x, y, random_state=79):
+def split_and_scale_data(x, y, random_state=42):
     """
     Investigating
     """
