@@ -1,28 +1,28 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pickle
-import joblib
-import json
-import scipy.stats as stats
-from sklearn.metrics import (
-    classification_report,
-    recall_score,
-    precision_recall_curve,
-    average_precision_score,
-)
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.tree import DecisionTreeClassifier
+"""
+    Investigating
+"""
 
+import json
+
+import joblib
+import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    average_precision_score,
+    classification_report,
+    precision_recall_curve,
+)
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 from data.clean_data import fetch_check
 
 
 def load_and_preprocess_data(filepath):
+    """
+    Investigating
+    """
 
     df = fetch_check()
     df["HeartDisease"] = ((df["HadHeartAttack"] == 1) | (df["HadAngina"] == 1)).astype(
@@ -44,6 +44,9 @@ def load_and_preprocess_data(filepath):
 
 
 def split_and_scale_data(x, y, random_state=79):
+    """
+    Investigating
+    """
 
     x_train, x_test, y_train, y_test = train_test_split(
         x, y, random_state=random_state, stratify=y, test_size=0.2
@@ -75,6 +78,9 @@ def split_and_scale_data(x, y, random_state=79):
 def train_and_evaluate_models(
     x_train, x_test, y_train, y_test, x_orig_test, y_orig_test
 ):
+    """
+    Investigating
+    """
 
     models = {
         "Logistic Regression": (
@@ -106,6 +112,7 @@ def train_and_evaluate_models(
     }
     trained_models = {}
     for name, (model, param_grid) in models.items():
+
         print(f"\n--- {name} ---")
 
         grid_search = GridSearchCV(
@@ -141,8 +148,12 @@ def train_and_evaluate_models(
 
 
 def export_models_and_metadata(trained_models, scaler, feature_columns):
+    """
+    Investigating
+    """
 
     for name, model in trained_models.items():
+
         # Create a safe filename by replacing spaces with underscores
         model_filename = f'{name.replace(" ", "_")}_model.pkl'
         joblib.dump(model, model_filename)
@@ -160,6 +171,9 @@ def export_models_and_metadata(trained_models, scaler, feature_columns):
 
 
 def main():
+    """
+    Investigating
+    """
 
     filepath = "data/csv/clean_data.csv"
 
