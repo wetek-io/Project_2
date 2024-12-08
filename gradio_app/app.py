@@ -1,70 +1,101 @@
+"""
+Webapp Front End
+"""
+
 import gradio as gr
 import pandas as pd
 import joblib
+from data.clean_data import fetch_check
+
+from data.value_maps import value_maps
 
 # Load the trained model
-model_path = "trained_model.pkl"
-rf_model = joblib.load(model_path)
+MODEL_PATH = "gradio_app/trained_model.pkl"
+try:
+    rf_model = joblib.load(MODEL_PATH)
+except FileNotFoundError as e:
+    raise FileNotFoundError(
+        f"Model file not found at {MODEL_PATH}. Please check the path."
+    ) from e
 
-# Define feature ranges and labels based on data
-numerical_features = ['BMI', 'WeightInKilograms', 'HeightInMeters', 'PhysicalHealthDays', 'SleepHours']
-categorical_features = [
-    'HadAngina_Yes', 'HadHeartAttack_Yes', 'ChestScan_Yes', 
-    'HadStroke_Yes', 'DifficultyWalking_Yes', 'HadDiabetes_Yes', 
-    'PneumoVaxEver_Yes', 'HadArthritis_Yes'
-]
+# Fetch and clean original data
+og_df = fetch_check(to_fetch=True, to_fillna=True, to_dropna=True)
 
-# Define sliders for numerical features
-sliders = {
-    "BMI": (0, 50, 1),
-    "WeightInKilograms": (30, 200, 1),
-    "HeightInMeters": (1.0, 2.5, 0.01),
-    "PhysicalHealthDays": (0, 30, 1),
-    "SleepHours": (0, 24, 1)
-}
+
+def compute_slider_limits(df, threshold=99):
+    """
+    Dynamically create and compute sliders
+    """
+    return {
+        col: {
+            "min": int(df[col].min()),
+            "max": int(df[df[col] < threshold][col].max()),
+        }
+        for col in df.select_dtypes(include=["float64", "int64"]).columns
+    }
+
+
+# Set sliders
+sliders = compute_slider_limits(og_df, threshold=99)
 
 # Define radio buttons for categorical features
-radio_options = ['Yes', 'No']
+radio_options = ["Yes", "No"]
 
-# Prediction function
+
 def predict_outcome(*inputs):
-    input_data = dict(zip(numerical_features + categorical_features, inputs))
-    
-    # Convert categorical inputs to numerical
-    for feature in categorical_features:
-        input_data[feature] = 1 if input_data[feature] == "Yes" else 0
-    
-    # Create input DataFrame
+    """
+    Converts user inputs into model-friendly format, runs the prediction,
+    and returns the result.
+    """
+    # Convert inputs to a DataFrame for prediction
+    input_data = dict(zip(sliders.keys(), inputs))
+
+    # Map categorical inputs to numerical
+    for feature, value in input_data.items():
+        if value in radio_options:
+            input_data[feature] = 1 if value == "Yes" else 0
+
     input_df = pd.DataFrame([input_data])
-    
-    # Predict using the model
-    prediction = rf_model.predict(input_df)[0]
-    prediction_label = "High Risk" if prediction == 1 else "Low Risk"
-    
-    # Display input values for debugging
-    return prediction_label, input_data
 
-# Build Gradio interface
-inputs = [
-    gr.Slider(sliders[feature][0], sliders[feature][1], sliders[feature][2], label=feature) 
-    for feature in numerical_features
-] + [
-    gr.Radio(radio_options, label=feature) for feature in categorical_features
-]
+    # Perform prediction
+    try:
+        prediction = rf_model.predict(input_df)[0]
+        prediction_label = "High Risk" if prediction == 1 else "Low Risk"
+    except ValueError as e:
+        raise ValueError(f"Error during prediction: {e}") from e
 
-outputs = [
-    gr.Textbox(label="Prediction"),
-    gr.JSON(label="Input Values (Debugging)")
-]
+    return prediction_label
 
-interface = gr.Interface(
-    fn=predict_outcome,
-    inputs=inputs,
-    outputs=outputs,
-    title="Health Risk Prediction with Debugging",
-    description="Predicts health risks based on input parameters using the trained model. Includes input values for debugging."
-)
 
-# Launch the app
+def build_interface():
+    """
+    Constructs the Gradio interface dynamically based on the dataset.
+    """
+    # inputs = [
+    #     gr.Slider(
+    #         minimum=sliders[col]["min"],
+    #         maximum=sliders[col]["max"],
+    #         label=col,
+    #     )
+    #     for col in sliders
+    # ]
+    inputs = [
+        gr.Dropdown(
+            choices=list(mapping.keys()),  # Use human-readable values
+            label=feature.replace("_", " "),  # Clean up labels for display
+        )
+        for feature, mapping in value_maps.items()
+    ]
+    # Add radio buttons for categorical features if needed
+    inputs += [
+        gr.Radio(choices=radio_options, label=col) for col in []
+    ]  # Add categorical if applicable
+
+    outputs = gr.Label(label="Prediction")
+    return gr.Interface(fn=predict_outcome, inputs=inputs, outputs=outputs)
+
+
+# Run the app
 if __name__ == "__main__":
+    interface = build_interface()
     interface.launch()
