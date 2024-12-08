@@ -38,8 +38,20 @@ def compute_slider_limits(df, threshold=99):
 # Set sliders
 sliders = compute_slider_limits(og_df, threshold=99)
 
+# Generate dropdowns/radio buttons for categorical features using value_maps
+categorical_inputs = {
+    feature: gr.Dropdown(
+        choices=list(mapping.keys()),  # Use human-readable labels
+        label=feature.replace("_", " "),  # Clean up feature name for display
+    )
+    for feature, mapping in value_maps.items()
+    if mapping  # Only include features with mappings
+}
+
 # Define radio buttons for categorical features
 radio_options = ["Yes", "No"]
+
+all_inputs = list(sliders.values()) + list(categorical_inputs.values())
 
 
 def predict_outcome(*inputs):
