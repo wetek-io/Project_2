@@ -1,70 +1,51 @@
 import gradio as gr
-import pandas as pd
 import joblib
+import pandas as pd
 
-# Load the trained model
-model_path = "trained_model.pkl"
-rf_model = joblib.load(model_path)
+# Load the pre-trained model
+model = joblib.load("tuned_model.pkl")
 
-# Define feature ranges and labels based on data
-numerical_features = ['BMI', 'WeightInKilograms', 'HeightInMeters', 'PhysicalHealthDays', 'SleepHours']
-categorical_features = [
-    'HadAngina_Yes', 'HadHeartAttack_Yes', 'ChestScan_Yes', 
-    'HadStroke_Yes', 'DifficultyWalking_Yes', 'HadDiabetes_Yes', 
-    'PneumoVaxEver_Yes', 'HadArthritis_Yes'
-]
-
-# Define sliders for numerical features
-sliders = {
-    "BMI": (0, 50, 1),
-    "WeightInKilograms": (30, 200, 1),
-    "HeightInMeters": (1.0, 2.5, 0.01),
-    "PhysicalHealthDays": (0, 30, 1),
-    "SleepHours": (0, 24, 1)
-}
-
-# Define radio buttons for categorical features
-radio_options = ['Yes', 'No']
+# Load the features used during training
+features = pd.read_csv("features_used_in_model.csv")["Feature"].tolist()
 
 # Prediction function
-def predict_outcome(*inputs):
-    input_data = dict(zip(numerical_features + categorical_features, inputs))
-    
-    # Convert categorical inputs to numerical
-    for feature in categorical_features:
-        input_data[feature] = 1 if input_data[feature] == "Yes" else 0
-    
-    # Create input DataFrame
-    input_df = pd.DataFrame([input_data])
-    
-    # Predict using the model
-    prediction = rf_model.predict(input_df)[0]
-    prediction_label = "High Risk" if prediction == 1 else "Low Risk"
-    
-    # Display input values for debugging
-    return prediction_label, input_data
+def predict_heart_failure(*input_values):
+    try:
+        # Convert inputs into a dictionary
+        input_data = dict(zip(features, input_values))
+        
+        # Convert input dictionary to DataFrame
+        input_df = pd.DataFrame([input_data])
+        
+        # Predict probability for heart failure (class 1)
+        probability = model.predict_proba(input_df)[:, 1][0]
+        
+        # Predict class (0 or 1)
+        prediction = "At Risk of Heart Failure" if probability >= 0.3 else "No Risk Detected"
+        
+        # Return prediction, probability, and user inputs
+        return prediction, round(probability, 4), input_data
+    except Exception as e:
+        return "Error", 0, {"error": str(e)}
 
-# Build Gradio interface
-inputs = [
-    gr.Slider(sliders[feature][0], sliders[feature][1], sliders[feature][2], label=feature) 
-    for feature in numerical_features
-] + [
-    gr.Radio(radio_options, label=feature) for feature in categorical_features
-]
-
-outputs = [
-    gr.Textbox(label="Prediction"),
-    gr.JSON(label="Input Values (Debugging)")
-]
+# Gradio Interface
+inputs = [gr.Textbox(label=feature, placeholder=f"Enter value for {feature}") for feature in features]
 
 interface = gr.Interface(
-    fn=predict_outcome,
+    fn=predict_heart_failure,
     inputs=inputs,
-    outputs=outputs,
-    title="Health Risk Prediction with Debugging",
-    description="Predicts health risks based on input parameters using the trained model. Includes input values for debugging."
+    outputs=[
+        gr.Text(label="Prediction"),
+        gr.Number(label="Risk Probability"),
+        gr.JSON(label="User Inputs")
+    ],
+    title="Heart Failure Prediction Model",
+    description=(
+        "Predicts the likelihood of heart failure based on health features. "
+        "Enter the values for the features below and receive the prediction."
+    )
 )
 
-# Launch the app
+# Launch the interface for local testing or Hugging Face Spaces deployment
 if __name__ == "__main__":
-    interface.launch()
+    interface.launch(share=True)
