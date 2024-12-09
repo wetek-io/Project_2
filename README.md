@@ -56,6 +56,35 @@ Review and run the sections of model_dev.ipynb to initializes, train, and evalua
 ## Results and Insights
 
 ## Conclusion
+With respect to model optimization, our primary focus was on reducing false negatives rather than model accuracy or R-squared. False negatives could be catastrophic, because you would be telling someone with a higher likelihood of heart failure, that they are not at risk of heart failure.\
+Note that ROC AUC is the correct metric to evaluate our model’s performance, not R-squared, because the focus is on the Model’s ability to distinguish classes. It's a classificaiton problem.\
+In contrast, R-squared focuses on variance explained in the target variable, for regression problems.
+
+Advantages of ROC AUC
+	•	Threshold-Independent:
+	•	Unlike accuracy, it evaluates model performance across all classification thresholds.
+	•	Class-Imbalance Robustness:
+	•	It works well even with imbalanced datasets since it focuses on the ranking of predictions.
+
+As you will see in model_dev.ipynb, these are the resulting scores from Threshold-tuning the random forest model. Notice that prioritizing recall has sacrificed precision.
+
+Threshold-Tuned Random Forest Evaluation:
+              precision    recall  f1-score   support
+
+           0       0.96      0.77      0.86     81077
+           1       0.24      0.71      0.35      7950
+
+    accuracy                           0.77     89027
+   macro avg       0.60      0.74      0.61     89027
+weighted avg       0.90      0.77      0.81     89027
+
+Accuracy: 0.7676435238747795
+ROC AUC: 0.7434347502409193
+
+Since we are working with a classification problem (predicting heart failure), ROC AUC is the correct metric to evaluate our model’s performance.
+
+## Future considerations
+Logistic Regression Evaluation had nearly identical ROC AUC scores, and threshold tuning our logistic regression model at various thresholds may prove to be beneficial. Since we ran out of time, we'll leave that exercises to the open source community or our future, curious selves.
 
 ## How to Use
 
