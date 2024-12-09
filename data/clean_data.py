@@ -5,17 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from data.value_maps import (
-    age_ranges,
-    binaryValues,
-    e_smoking_history,
-    fill_values,
-    gen_health_weights,
-    last_checkup,
-    race_ethnicity_category,
-    smoking_history,
-    states,
-)
+from data.value_maps import category_maps, binary_maps, fill_values
 
 CSV_URL = "https://web-app-media-assests.sfo3.cdn.digitaloceanspaces.com/Indicators_of_Heart_Disease/2022/heart_2022_with_nans.csv"
 RAW_DATA_PATH = "./data/csv/raw_data.csv"
@@ -54,24 +44,34 @@ def clean_data(
     pd.DataFrame.to_csv(df, f"{path}/raw_data.csv", index=False)
 
     if remap_values:
-        df["GeneralHealth"] = df["GeneralHealth"].map(gen_health_weights)
-        df["AgeCategory"] = df["AgeCategory"].map(age_ranges)
+        df["GeneralHealth"] = df["GeneralHealth"].map(category_maps["GeneralHealth"])
+        df["AgeCategory"] = df["AgeCategory"].map(category_maps["AgeCategory"])
         df["RaceEthnicityCategory"] = df["RaceEthnicityCategory"].map(
-            race_ethnicity_category
+            category_maps["RaceEthnicityCategory"]
         )
-        df["SmokerStatus"] = df["SmokerStatus"].map(smoking_history)
-        df["ECigaretteUsage"] = df["ECigaretteUsage"].map(e_smoking_history)
-        df["LastCheckupTime"] = df["LastCheckupTime"].map(last_checkup)
-        df["State"] = df["State"].map(states)
-        df["Sex"] = df["Sex"].map(binaryValues)
-        df["PhysicalActivities"] = df["PhysicalActivities"].map(binaryValues)
-        df["HadHeartAttack"] = df["HadHeartAttack"].map(binaryValues)
-        df["HadAngina"] = df["HadAngina"].map(binaryValues)
-        df["HadStroke"] = df["HadStroke"].map(binaryValues)
-        df["HadArthritis"] = df["HadArthritis"].map(binaryValues)
-        df["HadDiabetes"] = df["HadDiabetes"].map(binaryValues)
-        df["AlcoholDrinkers"] = df["AlcoholDrinkers"].map(binaryValues)
-        df["HighRiskLastYear"] = df["HighRiskLastYear"].map(binaryValues)
+        df["SmokerStatus"] = df["SmokerStatus"].map(category_maps["SmokerStatus"])
+        df["ECigaretteUsage"] = df["ECigaretteUsage"].map(
+            category_maps["ECigaretteUsage"]
+        )
+        df["LastCheckupTime"] = df["LastCheckupTime"].map(
+            category_maps["LastCheckupTime"]
+        )
+        df["State"] = df["State"].map(category_maps["States"])
+        df["Sex"] = df["Sex"].map(binary_maps["Sex"])
+        df["PhysicalActivities"] = df["PhysicalActivities"].map(
+            binary_maps["PhysicalActivities"]
+        )
+        df["HadHeartAttack"] = df["HadHeartAttack"].map(binary_maps["HadHeartAttack"])
+        df["HadAngina"] = df["HadAngina"].map(binary_maps["HadAngina"])
+        df["HadStroke"] = df["HadStroke"].map(binary_maps["HadStroke"])
+        df["HadArthritis"] = df["HadArthritis"].map(binary_maps["HadArthritis"])
+        df["HadDiabetes"] = df["HadDiabetes"].map(binary_maps["HadDiabetes"])
+        df["AlcoholDrinkers"] = df["AlcoholDrinkers"].map(
+            binary_maps["AlcoholDrinkers"]
+        )
+        df["HighRiskLastYear"] = df["HighRiskLastYear"].map(
+            binary_maps["HighRiskLastYear"]
+        )
     if fillna:
         df = df.fillna(value=fill_values)
     if dropna:
