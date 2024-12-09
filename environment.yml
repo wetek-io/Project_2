@@ -17,5 +17,4 @@ dependencies:
   - pathlib
   - plotly
   - scipy
-  - logging
   - networkx
