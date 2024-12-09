@@ -44,7 +44,7 @@ The original data source was hosted on [Kraggle](https://www.kraggle.com), howev
 2. Review and run the sections of model_dev.ipynb to initializes, train, and evaluate several models and their performance in the context of heart failure prediction.
 3. Follow the Deployment Workflow guidelines below to deploy the gradio_app to huggingface.co, which gives you an easy-to-use web-based user interface.
 
-## Tech Stack Setup
+## Tech Stack Setup and How-to
 1. Clone the repository
 2. conda env update --name project_2_env -f environment.yml --prune
 3. Review and run main.ipynb
@@ -54,9 +54,9 @@ The original data source was hosted on [Kraggle](https://www.kraggle.com), howev
 ## Exploratory Data Analysis (EDA)
 Review and run the sections of model_dev.ipynb to initializes, train, and evaluate several models and their performance in the context of heart failure prediction.
 
-## Interactive Map Features
-
 ## Results and Insights
+
+Central to this effort was the use of the ROC AUC metric, which is more appropriate than simple accuracy for assessing classification performance, especially when dealing with imbalanced data and high-stakes clinical outcomes. The final Random Forest model, after threshold tuning, achieved a respectable ROC AUC (~0.74) while prioritizing recall to minimize the risk of missing patients who are potentially at high risk. Although this approach sacrificed some precision, the decision was guided by the critical importance of reducing false negatives in a medical context. Additionally, other models, such as Logistic Regression, showed promise for similar performance if further threshold tuning were pursued. The completed solution has been deployed using Gradio on Hugging Face Spaces, enabling an accessible, web-based interface that healthcare professionals can easily use to input new patient data and receive predictions. Looking ahead, there is potential to improve fairness by exploring bias mitigation techniques, enhance model robustness through advanced feature engineering and hyperparameter optimization, and further refine metrics to ensure that the model’s predictive power directly translates into better patient outcomes. In essence, this project offers a strong foundation for an interpretable, equitable, and actionable heart disease risk prediction tool.
 
 ## Conclusion
 With respect to model optimization, our primary focus was on reducing false negatives rather than model accuracy or R-squared. False negatives could be catastrophic, because you would be telling someone with a higher likelihood of heart failure, that they are not at risk of heart failure.\
@@ -89,10 +89,6 @@ Since we are working with a classification problem (predicting heart failure), R
 ## Future considerations
 Logistic Regression Evaluation had nearly identical ROC AUC scores, and threshold tuning our logistic regression model at various thresholds may prove to be beneficial. Since we ran out of time, we'll leave that exercises to the open source community or our future, curious selves.
 
-## How to Use
-
-## References and Credits
-
 ## Deployment Workflow
 
 The heartfailure prediction model was deployed to huggingface.co using a free account. Deployment to huggingface is easy. You simply sign up with an account, create a new [space](https://huggingface.co/docs/hub/en/spaces-overview), and then use git to push your model, python app, and any other dependencies. The app and backend dependencies will build automatically, and a URL will be provided.
@@ -104,20 +100,17 @@ In the case of this project, the files to be deployed are in the gradio_app fold
 4. features_used_in_model.csv allows the app to dynamically expand the features used, to a list. This makes it more efficient to code the interface, and to refactor everything if model changes are needed later.
 
 ## Branch Discipline
+We had a central branch administrator and seperate branches for each team member. Merges were intentional and lead by the branch admin
 
 ## Team Members
-
-## Contact The Team
-
-## Acknowledgments
+Joaquin, Roger, Steven, Tahir
 
 ### Data Sets
-
-We will utilize healthcare datasets suitable for classification tasks, including:
+Kaggle: https://www.kaggle.com/datasets/kamilpytlak/personal-key-indicators-of-heart-disease/data
 
 ### Setup
 
-Build project environment using conda
+Build project environment using conda and follow the How-To guide above
 
 ```bash
 conda env create -f environment.yml
@@ -129,6 +122,3 @@ conda env create -f environment.yml
 conda remove --name project_2_env --all
 ```
 
-### Tech Stack
-
-[Environment](environment.yml)
