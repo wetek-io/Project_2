@@ -4,7 +4,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - Python=3.12
+  - Python
   - requests
   - pandas
   - numpy
@@ -17,5 +17,4 @@ dependencies:
   - pathlib
   - plotly
   - scipy
-  - logging
-  - xgboost
+  - networkx

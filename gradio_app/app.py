@@ -1,51 +1,96 @@
+"""
+Webapp Front End
+"""
+
 import gradio as gr
 import joblib
-import pandas as pd
+from data.clean_data import fetch_check
 
-# Load the pre-trained model
-model = joblib.load("tuned_model.pkl")
+from data.value_maps import category_maps, binary_maps
 
-# Load the features used during training
-features = pd.read_csv("features_used_in_model.csv")["Feature"].tolist()
+MODEL_PATH = "Random_Foresttest_model.pkl"
+DEFAULT_VALUE = 99
+try:
+    rf_model = joblib.load(MODEL_PATH)
+    joblib.dump(rf_model, MODEL_PATH)
+except FileNotFoundError as e:
+    raise FileNotFoundError(
+        f"Model file not found at {MODEL_PATH}. Please check the path."
+    ) from e
 
-# Prediction function
-def predict_heart_failure(*input_values):
-    try:
-        # Convert inputs into a dictionary
-        input_data = dict(zip(features, input_values))
-        
-        # Convert input dictionary to DataFrame
-        input_df = pd.DataFrame([input_data])
-        
-        # Predict probability for heart failure (class 1)
-        probability = model.predict_proba(input_df)[:, 1][0]
-        
-        # Predict class (0 or 1)
-        prediction = "At Risk of Heart Failure" if probability >= 0.3 else "No Risk Detected"
-        
-        # Return prediction, probability, and user inputs
-        return prediction, round(probability, 4), input_data
-    except Exception as e:
-        return "Error", 0, {"error": str(e)}
+og_df = fetch_check(to_fetch=True, to_fillna=True, to_dropna=True)
 
-# Gradio Interface
-inputs = [gr.Textbox(label=feature, placeholder=f"Enter value for {feature}") for feature in features]
-
-interface = gr.Interface(
-    fn=predict_heart_failure,
-    inputs=inputs,
-    outputs=[
-        gr.Text(label="Prediction"),
-        gr.Number(label="Risk Probability"),
-        gr.JSON(label="User Inputs")
-    ],
-    title="Heart Failure Prediction Model",
-    description=(
-        "Predicts the likelihood of heart failure based on health features. "
-        "Enter the values for the features below and receive the prediction."
+binary_inputs = {
+    feature: gr.Radio(
+        choices=list(mapping.keys()),
+        label=feature.replace("_", " "),
     )
-)
+    for feature, mapping in binary_maps.items()
+    if mapping
+}
 
-# Launch the interface for local testing or Hugging Face Spaces deployment
+categorical_inputs = {
+    feature: gr.Dropdown(
+        choices=list(mapping.keys()),
+        label=feature.replace("_", " "),
+    )
+    for feature, mapping in category_maps.items()
+    if mapping
+}
+
+input_types = list(categorical_inputs.values()) + list(binary_inputs.values())
+
+for i in categorical_inputs:
+    print(f"input_types: {i}")
+for i in binary_inputs:
+    print(f"input_types: {i}")
+for i in input_types:
+    print(f"input_types: {i}")
+
+
+def predict_outcome(*user_inputs):
+    """
+    Converts user inputs into model-friendly format, runs the prediction,
+    and returns the result.
+    """
+    # Use maps to set expected features
+    expected_features = list(categorical_inputs.keys()) + list(binary_inputs.keys())
+
+    input_data = dict(zip(expected_features, user_inputs))
+
+    # Ensure all required features are present and that the numerical values are used for the model
+    input_data = {}
+    for feature, user_input in zip(expected_features, user_inputs):
+        if feature in binary_maps:
+            # Convert 'Yes'/'No' to 1/0
+            input_data[feature] = binary_maps[feature].get(user_input, DEFAULT_VALUE)
+        elif feature in category_maps:
+            # Convert categorical values
+            input_data[feature] = category_maps[feature].get(user_input, DEFAULT_VALUE)
+        else:
+            # Default value for unexpected inputs
+            input_data[feature] = DEFAULT_VALUE
+
+    # Create a DataFrame for prediction
+    input_df = pd.DataFrame([input_data])[expected_features]
+
+    # Perform prediction
+    try:
+        prediction = rf_model.predict(input_df)[0]
+        return "High Risk" if prediction == 1 else "Low Risk"
+    except ValueError as e:
+        raise ValueError(f"Error during prediction: {e}") from e
+
+
+def build_interface():
+    """
+    Constructs the Gradio interface dynamically based on the dataset.
+    """
+    outputs = gr.Label(label="Prediction")
+    return gr.Interface(fn=predict_outcome, inputs=input_types, outputs=outputs)
+
+
+# Run the app
 if __name__ == "__main__":
-    interface.launch(share=True)
+    interface = build_interface()
+    interface.launch()

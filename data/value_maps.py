@@ -1,4 +1,9 @@
-""" Int maps for Dataframe column values"""
+"""
+    Int maps for Dataframe column values
+    
+    The numerical values can also be thought of as weights. Ie, poor general health (4 out of 4) is 'heavier' than
+    excellent general health (0 out if 4)
+"""
 
 fill_values = {
     "HighRiskLastYear": 99.99,
@@ -16,18 +21,17 @@ fill_values = {
     "HadAngina": 99.99,
     "HadHeartAttack": 99.99,
     "PhysicalActivities": 99.99,
-    "LastCheckupTime": 99.99,
     "GeneralHealth": 99.99,
     "Sex": 99.99,
-    "PhysicalHealthDays": 99.99,
-    "MentalHealthDays": 99.99,
     "SleepHours": 99.99,
     "HeightInMeters": 99.99,
     "BMI": 99.99,
     "WeightInKilograms": 99.99,
 }
 
-binaryValues = {"Female": 1, "Male": 0, "Yes": 1, "No": 0}
+sex_values = {"Female": 1, "Male": 0}
+
+binary_values = {"Yes": 1, "No": 0}
 
 gen_health_weights = {
     "Poor": 4,
@@ -137,4 +141,26 @@ states = {
     "Nevada": 2,
     "Guam": 1,
     "Virgin Islands": 0,
+}
+
+category_maps = {
+    "States": states,
+    "LastCheckupTime": last_checkup,
+    "GeneralHealth": gen_health_weights,
+    "SmokerStatus": smoking_history,
+    "ECigaretteUsage": e_smoking_history,
+    "RaceEthnicityCategory": race_ethnicity_category,
+    "AgeCategory": age_ranges,
+}
+
+binary_maps = {
+    "Sex": sex_values,
+    "AlcoholDrinkers": binary_values,
+    "HighRiskLastYear": binary_values,
+    "PhysicalActivities": binary_values,
+    "HadHeartAttack": binary_values,
+    "HadAngina": binary_values,
+    "HadStroke": binary_values,
+    "HadArthritis": binary_values,
+    "HadDiabetes": binary_values,
 }
