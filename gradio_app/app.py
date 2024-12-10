@@ -1,96 +1,64 @@
-"""
-Webapp Front End
-"""
 
 import gradio as gr
 import joblib
-from data.clean_data import fetch_check
+import pandas as pd
 
-from data.value_maps import category_maps, binary_maps
+# Path to the trained model
+MODEL_PATH = "tuned_model.pkl"
 
-MODEL_PATH = "Random_Foresttest_model.pkl"
-DEFAULT_VALUE = 99
+# Load the model
 try:
-    rf_model = joblib.load(MODEL_PATH)
-    joblib.dump(rf_model, MODEL_PATH)
-except FileNotFoundError as e:
-    raise FileNotFoundError(
-        f"Model file not found at {MODEL_PATH}. Please check the path."
-    ) from e
+    model = joblib.load(MODEL_PATH)
+except FileNotFoundError:
+    raise FileNotFoundError(f"Model file not found at {MODEL_PATH}.")
 
-og_df = fetch_check(to_fetch=True, to_fillna=True, to_dropna=True)
-
-binary_inputs = {
-    feature: gr.Radio(
-        choices=list(mapping.keys()),
-        label=feature.replace("_", " "),
-    )
-    for feature, mapping in binary_maps.items()
-    if mapping
-}
-
-categorical_inputs = {
-    feature: gr.Dropdown(
-        choices=list(mapping.keys()),
-        label=feature.replace("_", " "),
-    )
-    for feature, mapping in category_maps.items()
-    if mapping
-}
-
-input_types = list(categorical_inputs.values()) + list(binary_inputs.values())
-
-for i in categorical_inputs:
-    print(f"input_types: {i}")
-for i in binary_inputs:
-    print(f"input_types: {i}")
-for i in input_types:
-    print(f"input_types: {i}")
-
-
-def predict_outcome(*user_inputs):
-    """
-    Converts user inputs into model-friendly format, runs the prediction,
-    and returns the result.
-    """
-    # Use maps to set expected features
-    expected_features = list(categorical_inputs.keys()) + list(binary_inputs.keys())
-
-    input_data = dict(zip(expected_features, user_inputs))
-
-    # Ensure all required features are present and that the numerical values are used for the model
-    input_data = {}
-    for feature, user_input in zip(expected_features, user_inputs):
-        if feature in binary_maps:
-            # Convert 'Yes'/'No' to 1/0
-            input_data[feature] = binary_maps[feature].get(user_input, DEFAULT_VALUE)
-        elif feature in category_maps:
-            # Convert categorical values
-            input_data[feature] = category_maps[feature].get(user_input, DEFAULT_VALUE)
-        else:
-            # Default value for unexpected inputs
-            input_data[feature] = DEFAULT_VALUE
-
-    # Create a DataFrame for prediction
-    input_df = pd.DataFrame([input_data])[expected_features]
-
-    # Perform prediction
+# Define prediction function
+def predict_with_model(State: str, Sex: str, GeneralHealth: str, PhysicalHealthDays: str, MentalHealthDays: str, LastCheckupTime: str, PhysicalActivities: str, SleepHours: str, HadStroke: str, HadArthritis: str, HadDiabetes: str, SmokerStatus: str, ECigaretteUsage: str, RaceEthnicityCategory: str, AgeCategory: str, HeightInMeters: str, WeightInKilograms: str, BMI: str, AlcoholDrinkers: str, HighRiskLastYear: str):
     try:
-        prediction = rf_model.predict(input_df)[0]
-        return "High Risk" if prediction == 1 else "Low Risk"
-    except ValueError as e:
-        raise ValueError(f"Error during prediction: {e}") from e
+        # Prepare input data as a DataFrame
+        input_data = pd.DataFrame([[State, Sex, GeneralHealth, PhysicalHealthDays, MentalHealthDays, LastCheckupTime, PhysicalActivities, SleepHours, HadStroke, HadArthritis, HadDiabetes, SmokerStatus, ECigaretteUsage, RaceEthnicityCategory, AgeCategory, HeightInMeters, WeightInKilograms, BMI, AlcoholDrinkers, HighRiskLastYear]], columns=['State', 'Sex', 'GeneralHealth', 'PhysicalHealthDays', 'MentalHealthDays', 'LastCheckupTime', 'PhysicalActivities', 'SleepHours', 'HadStroke', 'HadArthritis', 'HadDiabetes', 'SmokerStatus', 'ECigaretteUsage', 'RaceEthnicityCategory', 'AgeCategory', 'HeightInMeters', 'WeightInKilograms', 'BMI', 'AlcoholDrinkers', 'HighRiskLastYear'])
+        prediction = model.predict(input_data)
+        return "Heart Disease Risk" if prediction[0] == 1 else "No Risk"
+    except Exception as e:
+        return f"Error during prediction: {e}"
 
+# Define the Gradio interface
+with gr.Blocks() as app:
+    gr.Markdown("# Health Risk Prediction App")
+    gr.Markdown("### Input the feature values below to predict health risks.")
 
-def build_interface():
-    """
-    Constructs the Gradio interface dynamically based on the dataset.
-    """
-    outputs = gr.Label(label="Prediction")
-    return gr.Interface(fn=predict_outcome, inputs=input_types, outputs=outputs)
+    inputs = [
+        gr.Dropdown(["Alabama", "Alaska", "Arizona", "Arkansas", "California"], label="State"),  # Example states
+        gr.Radio(["Male", "Female"], label="Sex"),
+        gr.Radio(["Excellent", "Very Good", "Good", "Fair", "Poor"], label="GeneralHealth"),
+        gr.Slider(0, 30, step=1, label="PhysicalHealthDays"),
+        gr.Slider(0, 30, step=1, label="MentalHealthDays"),
+        gr.Radio(["Within last year", "1-2 years ago", "3-5 years ago", "5+ years ago"], label="LastCheckupTime"),
+        gr.Radio(["Yes", "No"], label="PhysicalActivities"),
+        gr.Slider(0, 24, step=1, label="SleepHours"),
+        gr.Radio(["Yes", "No"], label="HadStroke"),
+        gr.Radio(["Yes", "No"], label="HadArthritis"),
+        gr.Radio(["Yes", "No"], label="HadDiabetes"),
+        gr.Radio(["Smoker", "Non-Smoker"], label="SmokerStatus"),
+        gr.Radio(["Yes", "No"], label="ECigaretteUsage"),
+        gr.Dropdown(["White", "Black", "Asian", "Hispanic", "Other"], label="RaceEthnicityCategory"),
+        gr.Dropdown(["18-24", "25-34", "35-44", "45-54", "55-64", "65+"], label="AgeCategory"),
+        gr.Slider(1.0, 2.5, step=0.01, label="HeightInMeters"),
+        gr.Slider(30, 200, step=1, label="WeightInKilograms"),
+        gr.Slider(10, 50, step=0.1, label="BMI"),
+        gr.Radio(["Yes", "No"], label="AlcoholDrinkers"),
+        gr.Radio(["Yes", "No"], label="HighRiskLastYear"),
+    ]
 
+    predict_button = gr.Button("Predict")
+    output = gr.Textbox(label="Prediction Result")
 
-# Run the app
-if __name__ == "__main__":
-    interface = build_interface()
-    interface.launch()
+    # Connect prediction logic
+    predict_button.click(
+        fn=predict_with_model,
+        inputs=inputs,
+        outputs=output,
+    )
+
+# Launch the app
+app.launch()
