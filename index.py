@@ -22,9 +22,7 @@ from sklearn.tree import DecisionTreeClassifier
 from data.clean_data import fetch_check
 
 
-def load_and_preprocess_data(filepath):
-
-    df = fetch_check()
+def load_and_preprocess_data(df):
     df["HeartDisease"] = ((df["HadHeartAttack"] == 1) | (df["HadAngina"] == 1)).astype(
         int
     )
@@ -80,7 +78,6 @@ def train_and_evaluate_models(
         "Logistic Regression": (
             LogisticRegression(
                 max_iter=1000,
-                class_weight="balanced",  # Helps with imbalanced classes
                 C=0.1,  # Regularization to prevent overfitting
                 solver="liblinear",  # Better for smaller datasets
             ),
@@ -133,7 +130,7 @@ def train_and_evaluate_models(
         plt.xlabel("Recall")
         plt.ylabel("Precision")
         plt.legend()
-        plt.show()
+        plt.savefig("recall_curve.png")
 
         trained_models[name] = best_model
 
@@ -144,7 +141,7 @@ def export_models_and_metadata(trained_models, scaler, feature_columns):
 
     for name, model in trained_models.items():
         # Create a safe filename by replacing spaces with underscores
-        model_filename = f'{name.replace(" ", "_")}_model.pkl'
+        model_filename = f'{name.replace(" ", "_")}test_model.pkl'
         joblib.dump(model, model_filename)
         print(f"Model saved as {model_filename}")
 
@@ -153,20 +150,20 @@ def export_models_and_metadata(trained_models, scaler, feature_columns):
     print("Feature scaler saved as feature_scaler.pkl")
 
     # Save feature column names
-    feature_names_filename = "feature_columns.json"
-    with open(feature_names_filename, "w") as f:
+    feature_names_filename = feature_columns
+    with open(feature_names_filename) as f:
         json.dump(list(feature_columns), f)
     print(f"Feature column names saved as {feature_names_filename}")
 
 
 def main():
 
-    filepath = "data/csv/clean_data.csv"
+    df = fetch_check()
 
     (
         x,
         y,
-    ) = load_and_preprocess_data(filepath)
+    ) = load_and_preprocess_data(df)
 
     (
         x_train_scaled,
@@ -184,6 +181,12 @@ def main():
         y_test_encoded,
         x_orig_test,
         y_orig_test,
+    )
+
+    export_models_and_metadata(
+        trained_models=trained_models,
+        scaler=StandardScaler,
+        feature_columns=df.columns,
     )
 
 
